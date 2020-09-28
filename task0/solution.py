@@ -22,6 +22,7 @@ def generate_sample(n_samples, seed=None):
     """ data generating process of the Bayesian model """
     random_state = np.random.RandomState(seed)
     hypothesis_idx = np.random.choice(3, p=PRIOR_PROBS)
+    print(hypothesis_idx)
     dist = HYPOTHESIS_SPACE[hypothesis_idx]
     return dist.rvs(n_samples, random_state=random_state)
 
@@ -44,6 +45,20 @@ def log_posterior_probs(x):
     assert x.ndim == 1
 
     # TODO: enter your code here
+
+    # log prior logP(Hi)
+    log_prior = np.log(PRIOR_PROBS)
+
+    # log likelihood logP(X|H) = [logP(X|H1), logP(X|H2), logP(X|H3)]
+    log_likelihood = np.array([])
+    for dist in HYPOTHESIS_SPACE:
+        log_likelihood = np.append(log_likelihood, np.sum(dist.logpdf(x)))
+
+    # log model evidence logP(X) = log( exp(logP(H1)+logP(X|H1)) + exp(logP(H2)+logP(X|H2)) + exp(logP(H3)+logP(X|H3)) )
+    log_model_evidence = logsumexp( log_prior + log_likelihood ) # use logsumexp for numerical stability
+
+    # log Bayes rule logP(Hi|X) = log{ P(X|Hi)*P(Hi)/P(X) } = logP(X|Hi) + logP(Hi) - logP(X)
+    log_p = log_likelihood + log_prior - log_model_evidence
 
     assert log_p.shape == (3,)
     return log_p
