@@ -128,7 +128,7 @@ class Model():
         y = self.model.predict(test_x)
         # we add a safety increase to 'safe' predictions since false negatives are penalized harshly
         predict_safe = (y < THRESHOLD).astype(int)
-        y += 0.15 * predict_safe
+        y += 0.12 * predict_safe
 
         return y
 

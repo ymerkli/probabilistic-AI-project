@@ -1,0 +1,7 @@
+We first of all analyze the given train_X data set. The dataset has size 17250x2, i.e. each datapoint has two features, which is reasonable since we are dealing with coordinates in a plane.
+We then plot the distribution of the datapoints by using a scatter plot. We immediately see that the data is heavily imbalanced with 17100 datapoints being in the x0 region [-1.0, -0.5] and only 150 datapoints being in the [-0.5, 1.0] region, where we assume a datapoint has features x=[x0, x1]. Since inference in Gaussian Processes has complexity O(N^3), we can't directly work with 17250 datapoints. Instead of using sparse approximations, we decided to subsample the dense input region (x0 range [-1.0, -0.5]).
+We randomly picked 1500 samples from the dense region and all 150 samples from the sparse region. We then separately create a validation set on both the dense and sparse region in order to get an even fraction of validaton points in each region.
+
+We then use a pipeline of sklearn's StandardScaler() and GaussianProcessRegressor() as our model and evaluate different kernel options. We achieved the best performance with an additive kernel consisting of a Matern-5/2 kernel with length_scale 0.01 and a white noise kernel with a noise level of 1e-05.
+
+In order to deal with the specific cost function that heavily penalizes predicting 'safe' to an 'unsafe' water contamination, we add a safety threshold of 0.12 to all predictions that are below THRESHOLD (i.e. all 'safe' predictions).
