@@ -50,9 +50,9 @@ class BayesianLayer(torch.nn.Module):
         self.use_bias = bias
 
         # TODO: enter your code here
-        self.prior_mu = prior_mu
+        self.prior_mu = nn.Parameter(torch.Tensor(1)).data.fill_(prior_mu)
         self.prior_sigma = prior_sigma
-        self.prior_logsigma = math.log(self.prior_sigma)
+        self.prior_logsigma = nn.Parameter(torch.Tensor(1)).data.fill_(math.log(prior_sigma))
 
         self.weight_mu = nn.Parameter(torch.Tensor(self.output_dim, self.input_dim))
         self.weight_logsigma = nn.Parameter(torch.Tensor(self.output_dim, self.input_dim))
@@ -72,10 +72,10 @@ class BayesianLayer(torch.nn.Module):
         stdv = 1. / math.sqrt(self.weight_mu.size(1))
         stdv = 0.1
         self.weight_mu.data.uniform_(-stdv, stdv)
-        self.weight_logsigma.data.fill_(self.prior_logsigma)
+        self.weight_logsigma.data.fill_(math.log(self.prior_sigma))
         if self.use_bias :
             self.bias_mu.data.uniform_(-stdv, stdv)
-            self.bias_logsigma.data.fill_(self.prior_logsigma)
+            self.bias_logsigma.data.fill_(math.log(self.prior_sigma))
 
     def forward(self, inputs):
         weight = self.weight_mu + (torch.exp(self.weight_logsigma) + JITTER) * torch.randn_like(self.weight_logsigma)
@@ -101,11 +101,13 @@ class BayesianLayer(torch.nn.Module):
         Computes the KL divergence between one Gaussian posterior
         and the Gaussian prior.
         '''
-        # TODO: enter your code here
-        kl = logsigma - self.prior_logsigma + \
-            (math.exp(self.prior_logsigma)**2 + (self.prior_mu - mu)**2) / (2*torch.exp(logsigma)**2) - 0.5
+        # extract scalar values from torch tensor
+        prior_logsigma = self.prior_logsigma.data[0]
+        prior_mu = self.prior_mu.data[0]
+        kl = logsigma - prior_logsigma + \
+            (math.exp(prior_logsigma)**2 + (prior_mu - mu)**2) / (2*torch.exp(logsigma)**2) - 0.5
 
-        return kl.sum()
+        return kl.mean()
 
 
 class BayesNet(torch.nn.Module):
@@ -116,11 +118,23 @@ class BayesNet(torch.nn.Module):
     def __init__(self, input_size, num_layers, width, prior_mu=0, prior_sigma=0.1,):
         super().__init__()
         self.output_dim = 10
-        input_layer = torch.nn.Sequential(BayesianLayer(input_size, width, prior_mu, prior_sigma),
+
+        if type(width) == list:
+            input_layer = torch.nn.Sequential(BayesianLayer(input_size, width[0], prior_mu, prior_sigma),
                                            nn.ReLU())
-        hidden_layers = [nn.Sequential(BayesianLayer(width, width, prior_mu, prior_sigma),
-                                    nn.ReLU()) for _ in range(num_layers)]
-        output_layer = BayesianLayer(width, self.output_dim, prior_mu, prior_sigma)
+            hidden_layers = []
+            for i in range(len(width)-1):
+                hidden_layers.append(
+                    torch.nn.Sequential(BayesianLayer(width[i], width[i+1], prior_mu, prior_sigma))
+                )
+            output_layer = BayesianLayer(width[-1], self.output_dim, prior_mu, prior_sigma)
+        else:
+            input_layer = torch.nn.Sequential(BayesianLayer(input_size, width, prior_mu, prior_sigma),
+                                           nn.ReLU())
+            hidden_layers = [nn.Sequential(BayesianLayer(width, width, prior_mu, prior_sigma),
+                                nn.ReLU()) for _ in range(num_layers)]
+            output_layer = BayesianLayer(width, self.output_dim, prior_mu, prior_sigma)
+
         layers = [input_layer, *hidden_layers, output_layer]
         self.net = torch.nn.Sequential(*layers)
 

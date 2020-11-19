@@ -1,0 +1,8 @@
+For the Bayesian layer, we parametrize weights by a Gaussian with mean weight_mu and log-variance weight_logsigma (log-variance to prevent issues with negative variances). To optimize over the weight distribution, we apply the reparametrization trick in order to do Bayes by backprop. On each Bayesian layer, we register parameters weight_mu, weight_logsigma, bias_mu and bias_logsigma. In the forward pass, we sample the weights by applying weight_mu + exp(weight_logsigma) * N(0,1) and the equivalent for the bias (N(0,1) 0-mean, unit variance Gaussian) and then apply a simple affine transform. In the backward pass, we do backprop over weight and bias parameters. We implement the KL divergence for a Bayesian layer by using the explicit formula for the KL divergence of two Gaussians, which calculates both the KL divergence between the prior and bias and between the prior and weights.
+
+For the Bayesian net, we stack Bayesian layers, do 10 forward passes for each prediction and calculate the KL loss by calculating the KL loss of each Bayesian layer.
+
+We experimentally trained networks for parameters until we achieved a good accuracy and ECE. We allow weighting the KL loss by a hyperparameter kl_weight.
+We achieved the best score for a batch_size 256, prior_mu 0, prior_sigma 0.145, 3 Bayesian layers, 100 neurons per layer, learning_rate 1e-3, 100 training epochs and kl_weight 2.5.
+
+We also tried making the prior trainable, but we were not able to improve our score by doing so.
