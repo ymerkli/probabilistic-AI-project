@@ -154,7 +154,7 @@ class BO_algo():
         af_value: float
             Value of the acquisition function at x
         """
-        ei = self.expected_improvement(x, xi=0.014)
+        ei = self.expected_improvement(x, xi=0.015)
         constraint_weight = self.constraint_function(x)
 
         return float(ei * constraint_weight)

@@ -1,0 +1,11 @@
+We completed all TODOs in the given code framework, as specified by the project description, and thus implemented the ActorCritic algorithm:
+
+- We implemented the MLPActorCritic step function to sample a policy from the policy NN, sample an action from the sampled policy and estimate the value by feeding the state to the value network (all without gradients)
+- We implement TD residuals in the VPGBuffer, using the buffered rewards and values and then use discounting
+- We use the function -(logp_a * tdres).sum() as loss function for the policy network, where logp_a are the action log probabilities (with gradients) and tdres are the discounted standardized TD residuals (without gradients)
+- We use the loss function (0.5 * tdres**2).sum() as loss function for the value network, where tdres are the discounted standardized TD residuals (with gradients)
+- We implement the get_action() function of the Agent by simply calling act on the MLPActorCritic.
+
+Finally, we decreased the steps_per_epoch to 1500 and increased the epochs to 100. By trying out several different runs of the algorithm, we finally achieved a score of 204.
+
+Note: our scores were highly varying in between different runs of the algorithm, even when manually setting the torch seed. Thus, our score may not be reproducable when rerunning our submitted code. According to this Piazza post (https://piazza.com/class/ketpgr1sak64dc?cid=341) this is expected and not an issue.
